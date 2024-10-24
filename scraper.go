@@ -13,7 +13,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// Fungsi untuk mengambil HTML dari website
+// Function to retrieve HTML from website
 func getHTML(url string) string {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -29,11 +29,11 @@ func getHTML(url string) string {
 	return string(htmlData)
 }
 
-// Fungsi untuk mengambil CSS dari link <link> atau <style> dalam HTML
+// Function to retrieve CSS from a <link> or <style> link in HTML
 func getCSS(doc *goquery.Document, baseURL string) string {
 	var cssContent string
 
-	// Mengambil konten CSS dari elemen <link rel="stylesheet">
+	// Retrieve CSS content from the <link rel=“stylesheet”> element
 	doc.Find("link[rel='stylesheet']").Each(func(i int, s *goquery.Selection) {
 		if href, exists := s.Attr("href"); exists {
 			absURL := resolveURL(baseURL, href)
@@ -46,7 +46,7 @@ func getCSS(doc *goquery.Document, baseURL string) string {
 		}
 	})
 
-	// Mengambil konten CSS dari elemen <style>
+	// Retrieve CSS content from the <style> element
 	doc.Find("style").Each(func(i int, s *goquery.Selection) {
 		cssContent += s.Text() + "\n"
 	})
@@ -54,11 +54,11 @@ func getCSS(doc *goquery.Document, baseURL string) string {
 	return cssContent
 }
 
-// Fungsi untuk mengambil JavaScript dari elemen <script>
+// Function to retrieve JavaScript from <script> element
 func getJS(doc *goquery.Document, baseURL string) string {
 	var jsContent string
 
-	// Mengambil konten JavaScript dari elemen <script>
+	// Fetch the JavaScript content of the <script> element
 	doc.Find("script").Each(func(i int, s *goquery.Selection) {
 		if src, exists := s.Attr("src"); exists {
 			absURL := resolveURL(baseURL, src)
@@ -76,7 +76,7 @@ func getJS(doc *goquery.Document, baseURL string) string {
 	return jsContent
 }
 
-// Fungsi untuk mendapatkan semua link di halaman
+// Function to get all links in the page
 func getAllLinks(doc *goquery.Document, baseURL string) []string {
 	var links []string
 	doc.Find("a").Each(func(i int, s *goquery.Selection) {
@@ -90,7 +90,7 @@ func getAllLinks(doc *goquery.Document, baseURL string) []string {
 	return links
 }
 
-// Fungsi untuk menyimpan konten ke file
+// Function to save content to file
 func saveToFile(filename, content string) {
 	err := ioutil.WriteFile(filename, []byte(content), 0644)
 	if err != nil {
@@ -99,7 +99,7 @@ func saveToFile(filename, content string) {
 	fmt.Printf("Konten berhasil disimpan ke file %s\n", filename)
 }
 
-// Fungsi untuk mengubah path relatif menjadi absolut
+// Function to convert relative path to absolute
 func resolveURL(baseURL, href string) string {
 	base, err := url.Parse(baseURL)
 	if err != nil {
@@ -114,49 +114,49 @@ func resolveURL(baseURL, href string) string {
 	return base.ResolveReference(ref).String()
 }
 
-// Fungsi utama untuk scraping semua halaman
+// Main function for scraping all pages
 func scrapePage(pageURL, folderName string) {
-	// Ambil HTML dari halaman
+	// Retrieve HTML from the page
 	html := getHTML(pageURL)
 
-	// Buat folder untuk menyimpan file
+	// Create a folder to save the file
 	if err := os.MkdirAll(folderName, os.ModePerm); err != nil {
 		log.Fatalf("Error membuat folder %s: %v", folderName, err)
 	}
 
-	// Simpan HTML ke file
+	// Save HTML to file
 	saveToFile(filepath.Join(folderName, "index.html"), html)
 
-	// Parsing HTML menggunakan goquery
+	// Parsing HTML using goquery
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
 		log.Fatalf("Error parsing HTML: %v", err)
 	}
 
-	// Ambil CSS dan JavaScript dari halaman
+	// Fetch CSS and JavaScript from the page
 	cssContent := getCSS(doc, pageURL)
 	jsContent := getJS(doc, pageURL)
 
-	// Simpan CSS dan JavaScript ke file
+	// Save CSS and JavaScript to a file
 	saveToFile(filepath.Join(folderName, "styles.css"), cssContent)
 	saveToFile(filepath.Join(folderName, "scripts.js"), jsContent)
 
-	// Ambil semua link di halaman
+	// Fetch all links in the page
 	links := getAllLinks(doc, pageURL)
 	fmt.Printf("Ditemukan %d link pada halaman %s\n", len(links), pageURL)
 
-	// Rekursif untuk setiap halaman yang ditemukan
+	// Recursive for each page found
 	for _, link := range links {
-		// Gunakan nama folder yang unik berdasarkan URL
+		// Use a unique folder name based on the URL
 		linkFolder := folderName + "/" + strings.ReplaceAll(strings.TrimPrefix(link, pageURL), "/", "_")
 		scrapePage(link, linkFolder)
 	}
 }
 
 func main() {
-	// URL website yang ingin diambil kontennya
-	url := "https://templatekit.jegtheme.com/riderhood"
+	// URL of the website you want to retrieve content from
+	url := ""
 
-	// Mulai scraping halaman utama
+	// Start scraping the main page
 	scrapePage(url, "output")
 }
